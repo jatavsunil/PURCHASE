@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    container_name: flask_dashboard
+    ports:
+      - "8080:8080"
+    environment:
+      - MYSQL_HOST=localhost
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=Pass@123
+      - MYSQL_DATABASE=material_property
+      - MYSQL_PORT=3306
+    depends_on:
+      - material_property
+    restart: always
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_server
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Pass@123
+      MYSQL_DATABASE: material_property
+    ports:
+      - "3307:3306"   # ✅ change host port to 3307 (avoid port conflict)
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
