@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css">
+  <title>Material Form</title>
+  <style>
+    .suggestions {
+      border: 1px solid #ccc;
+      border-top: none;
+      max-height: 150px;
+      overflow-y: auto;
+      background: #fff;
+      position: absolute;
+      width: 100%;
+      z-index: 1000;
+    }
+    .suggestions div {
+      padding: 8px;
+      cursor: pointer;
+    }
+    .suggestions div:hover {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+<body class="bg-light p-4">
+  <div class="container bg-white p-4 rounded shadow">
+    <h3 class="mb-4">Material Submission Form</h3>
+    <form method="POST" id="materialForm">
+
+      <!-- Material Description (Search) -->
+      <div class="form-group position-relative">
+        <label>Material Description</label>
+        <input type="text" class="form-control" id="material_description" name="material_description" autocomplete="off" required>
+        <div id="material_suggestions" class="suggestions"></div>
+        <!-- Hidden fields -->
+        <input type="hidden" name="material_code" id="material_code">
+        <input type="hidden" name="Uom" id="uom">
+        <input type="hidden" name="Plant" id="plant">
+      </div>
+
+      <!-- UOM (readonly just to show) -->
+      <div class="form-group">
+        <label>UOM</label>
+        <input type="text" class="form-control" id="uom_display" readonly>
+      </div>
+
+      <!-- Plant (readonly just to show) -->
+      <div class="form-group">
+        <label>Plant</label>
+        <input type="text" class="form-control" id="plant_display" readonly>
+      </div>
+
+      <!-- Vendor Name (Search) -->
+      <div class="form-group position-relative">
+        <label>Vendor Name</label>
+        <input type="text" class="form-control" id="vendor_name" name="vendor_name" autocomplete="off" required>
+        <div id="vendor_suggestions" class="suggestions"></div>
+        <!-- Hidden field -->
+        <input type="hidden" name="vendor_code" id="vendor_code">
+      </div>
+
+      <!-- PO Number -->
+      <div class="form-group">
+        <label>PO Number</label>
+        <input type="text" class="form-control" name="po_number" required>
+      </div>
+
+      <!-- Quantity -->
+      <div class="form-group">
+        <label>Quantity</label>
+       <input type="number" class="form-control" name="Quantity" required>
+      </div>
+
+      <!-- PO Date -->
+      <div class="form-group">
+        <label>PO Date</label>
+        <input type="date" class="form-control" name="po_date" id="po_date" required>
+      </div>
+
+      <!-- Delivery Date -->
+      <div class="form-group">
+        <label>Delivery Date</label>
+        <input type="date" class="form-control" name="delivery_date" id="delivery_date" required>
+      </div>
+
+      <!-- Delivery Status -->
+      <div class="form-group">
+        <label>Delivery Status</label>
+        <select name="delivery_status" class="form-control" required>
+          <option value="Pending">Pending</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+
+      <!-- Lead Time -->
+      <div class="form-group">
+        <label>Lead Time</label>
+        <select name="lead_time" class="form-control" required>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+
+      <!-- Review Date -->
+      <div class="form-group">
+        <label>Review Date</label>
+        <input type="date" class="form-control" name="review_date">
+      </div>
+
+      <button type="submit" class="btn btn-success btn-block">Submit</button>
+    </form>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const materialInput = document.getElementById("material_description");
+      const materialSuggestions = document.getElementById("material_suggestions");
+      const vendorInput = document.getElementById("vendor_name");
+      const vendorSuggestions = document.getElementById("vendor_suggestions");
+
+      // ---- MATERIAL SEARCH ----
+      materialInput.addEventListener("input", () => {
+        let q = materialInput.value;
+        if (q.length < 2) {
+          materialSuggestions.innerHTML = "";
+          return;
+        }
+        fetch(`/search_materials?q=${q}`)
+          .then(res => res.json())
+          .then(data => {
+            materialSuggestions.innerHTML = "";
+            data.forEach(item => {
+              let div = document.createElement("div");
+              div.textContent = `${item.material_description} (${item.material_code})`;
+              div.onclick = () => {
+                materialInput.value = item.material_description;
+                document.getElementById("material_code").value = item.material_code;
+                document.getElementById("uom").value = item.Uom;
+                document.getElementById("plant").value = item.Plant;
+                document.getElementById("uom_display").value = item.Uom;
+                document.getElementById("plant_display").value = item.Plant;
+                materialSuggestions.innerHTML = "";
+                vendorInput.value = "";
+                vendorSuggestions.innerHTML = "";
+                document.getElementById("vendor_code").value = "";
+              };
+              materialSuggestions.appendChild(div);
+            });
+          });
+      });
+
+      // ---- VENDOR SEARCH ----
+      vendorInput.addEventListener("input", () => {
+        let q = vendorInput.value;
+        let materialCode = document.getElementById("material_code").value;
+        if (!materialCode || q.length < 2) {
+          vendorSuggestions.innerHTML = "";
+          return;
+        }
+        fetch(`/search_vendors/${materialCode}?q=${q}`)
+          .then(res => res.json())
+          .then(data => {
+            vendorSuggestions.innerHTML = "";
+            data.forEach(item => {
+              let div = document.createElement("div");
+              div.textContent = `${item.vendor_name} (${item.vendor_code})`;
+              div.onclick = () => {
+                vendorInput.value = item.vendor_name;
+                document.getElementById("vendor_code").value = item.vendor_code;
+                vendorSuggestions.innerHTML = "";
+              };
+              vendorSuggestions.appendChild(div);
+            });
+          });
+      });
+
+      // ---- DATE VALIDATION ----
+      document.getElementById("materialForm").addEventListener("submit", e => {
+        const poDate = new Date(document.getElementById("po_date").value);
+        const deliveryDate = new Date(document.getElementById("delivery_date").value);
+
+        if (deliveryDate < poDate) {
+          alert("Delivery Date cannot be before PO Date!");
+          e.preventDefault();
+        }
+
+        if (!document.getElementById("material_code").value) {
+          alert("Please select a valid material from suggestions.");
+          e.preventDefault();
+        }
+        if (!document.getElementById("vendor_code").value) {
+          alert("Please select a valid vendor from suggestions.");
+          e.preventDefault();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
